@@ -6,8 +6,8 @@ import joblib
 app = Flask(__name__)
 
 # Load the model and data
-model_path = 'CropGuardAI - 3/model/rf_regressor_model.pkl'  # Update the path as necessary
-data_path = 'CropGuardAI - 3/data/Final_Model_Dataset.csv'  # Update the path as necessary
+model_path = 'model\score_regressor_model.pkl'  # Update the path as necessary
+data_path = 'data\Final_Model_Dataset.csv'  # Update the path as necessary
 model = joblib.load(model_path)
 data = pd.read_csv(data_path)
 

@@ -11,7 +11,21 @@
     <style>
       body {
         background-color: #f2f2f7;
-        padding-top: 50px;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-image: url("https://png.pngtree.com/background/20210716/original/pngtree-crop-green-rice-light-effect-wallpaper-picture-image_1334589.jpg"); /* Update this URL with your image location */
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 600px;
       }
       .chat-container {
         background-color: white;
@@ -20,7 +34,7 @@
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         height: 500px;
         overflow-y: auto;
-        margin-bottom: 20px;
+        margin: 0;
       }
       .chat-entry {
         max-width: 75%;
@@ -41,21 +55,31 @@
         border-bottom-left-radius: 3px;
       }
       #userInput {
+        margin-top: 10px;
         border-radius: 20px;
         padding: 10px 20px;
         border: 1px solid #ccc;
         box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        width: 100%;
       }
       ::placeholder {
         color: #999;
+      }
+      .title {
+        text-align: center;
+        font-size: 36px;
+        color: #333;
+        margin-bottom: 20px;
       }
     </style>
   </head>
   <body>
     <div class="container">
+      <h1 class="title">Crop Risk Assessment Chatbot</h1>
       <div class="chat-container" id="chatContainer">
         <div class="chat-entry bot">
-          Hi there! 👋 I'm your Crop Risk Assistant. What's your name?
+          Hi there! 👋 I'm your Crop Risk Assistant
+          <strong>CropGuardAI</strong>. What's your name?
         </div>
       </div>
       <input
@@ -102,7 +126,6 @@
 
       function progressConversation(userText) {
         setTimeout(() => {
-          // simulate a slight delay in bot's response
           switch (step) {
             case 0:
               userData["Name"] = userText;
@@ -110,6 +133,7 @@
                 "Nice to meet you! Please enter your phone number.",
                 "bot"
               );
+              step++;
               break;
             case 1:
               if (!/^\d{10}$/.test(userText)) {
@@ -117,10 +141,10 @@
                   "Please enter a valid 10-digit phone number.",
                   "bot"
                 );
-                step--;
               } else {
                 userData["Phone"] = userText;
                 displayChatEntry("What's your email address?", "bot");
+                step++;
               }
               break;
             case 2:
@@ -129,7 +153,6 @@
                   "That doesn't look right. Please enter a valid email.",
                   "bot"
                 );
-                step--;
               } else {
                 userData["Email"] = userText;
                 displayChatEntry(
@@ -138,6 +161,7 @@
                   )}`,
                   "bot"
                 );
+                step++;
               }
               break;
             case 3:
@@ -146,15 +170,10 @@
                   "Please select a valid location from the list provided.",
                   "bot"
                 );
-                step--;
               } else {
                 userData["Location"] = userText;
-                displayChatEntry(
-                  `What type of crop are you planting? Available options: ${availableCrops.join(
-                    ", "
-                  )}`,
-                  "bot"
-                );
+                fetchCropsForLocation(userText); // Fetch crops based on the selected location
+                step++; // Increment here assuming that fetchCrops will successfully prompt for crop input next
               }
               break;
             case 4:
@@ -163,13 +182,13 @@
                   "Please select a valid crop from the list provided.",
                   "bot"
                 );
-                step--;
               } else {
                 userData["Crop"] = userText;
                 displayChatEntry(
                   "Please enter the expected average temperature in °F.",
                   "bot"
                 );
+                step++;
               }
               break;
             case 5:
@@ -178,14 +197,15 @@
                 "Please enter the expected precipitation in mm.",
                 "bot"
               );
+              step++;
               break;
             case 6:
               userData["Precipitation"] = parseFloat(userText);
               displayChatEntry("Thanks! Let me crunch the numbers...", "bot");
               submitData();
+              step = 0; // Reset or end conversation
               break;
           }
-          step++;
         }, 400);
       }
 
@@ -222,19 +242,29 @@
         availableLocations = data.locations;
       }
 
-      async function fetchCropsForLocation(location) {
-        const response = await fetch(`/get-crops?location=${location}`, {
+      function fetchCropsForLocation(location) {
+        // Simulate a fetch call
+        fetch(`/get-crops?location=${location}`, {
           method: "GET",
-        });
-        const data = await response.json();
-        availableCrops = data.crops;
-        displayChatEntry(
-          `What type of crop are you planting? Available options: ${availableCrops.join(
-            ", "
-          )}`,
-          "bot"
-        );
-        step++;
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            availableCrops = data.crops;
+            displayChatEntry(
+              `What type of crop are you planting? Available options: ${availableCrops.join(
+                ", "
+              )}`,
+              "bot"
+            );
+            // Don't increment step here; wait for user response
+          })
+          .catch((error) => {
+            displayChatEntry(
+              "Failed to fetch crop data. Please try again.",
+              "bot"
+            );
+            console.error("Fetch error:", error);
+          });
       }
     </script>
   </body>
