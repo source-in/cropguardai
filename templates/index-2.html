@@ -1,0 +1,802 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Risk Assessment Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding-top: 40px; }
+        .chat-container { padding: 10px; border: 1px solid #ccc; height: 400px; overflow-y: scroll; }
+        .chat-entry { padding: 8px 16px; margin: 5px; border-radius: 12px; }
+        .user { background-color: #007bff; color: white; border-bottom-right-radius: 0; }
+        .bot { background-color: #f8f9fa; border-bottom-left-radius: 0; }
+        #userInput { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">Crop Risk Assessment Chatbot</h2>
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-entry bot">Welcome to the Crop Risk Assessment Tool. Please type your name to start.</div>
+        </div>
+        <input type="text" id="userInput" class="form-control" placeholder="Type here..." onkeypress="handleUserInput(event)">
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        let step = 0;
+        const userData = {};
+
+        function handleUserInput(event) {
+            if (event.key === 'Enter') {
+                const userText = userInput.value;
+                if (userText.trim() === '') return;
+
+                // Display user text in chat
+                const userDiv = document.createElement('div');
+                userDiv.textContent = userText;
+                userDiv.className = 'chat-entry user';
+                chatContainer.appendChild(userDiv);
+
+                // Clear input
+                userInput.value = '';
+                userInput.setAttribute('type', 'text'); // reset type if changed
+
+                // Progress conversation based on step count
+                switch(step) {
+                    case 0:
+                        userData['Name'] = userText;
+                        addChatEntry("Great, now please enter your phone number.", 'bot');
+                        break;
+                    case 1:
+                        if (!/^\d{10}$/.test(userText)) {
+                            addChatEntry("Please enter a valid 10-digit phone number.", 'bot');
+                            step--; // decrement to repeat this step
+                        } else {
+                            userData['Phone'] = userText;
+                            addChatEntry("Please enter your email id.", 'bot');
+                        }
+                        break;
+                    case 2:
+                        if (!/\S+@\S+\.\S+/.test(userText)) {
+                            addChatEntry("Please enter a valid email address.", 'bot');
+                            step--; // decrement to repeat this step
+                        } else {
+                            userData['Email'] = userText;
+                            addChatEntry("Which location are you interested in?", 'bot');
+                        }
+                        break;
+                    case 3:
+                        userData['Location'] = userText;
+                        addChatEntry("What type of crop are you planting?", 'bot');
+                        break;
+                    case 4:
+                        userData['Crop'] = userText;
+                        addChatEntry("Please enter the expected average temperature in °F.", 'bot');
+                        userInput.setAttribute('type', 'number');
+                        break;
+                    case 5:
+                        userData['Temperature'] = parseFloat(userText);
+                        addChatEntry("Please enter the expected precipitation in mm.", 'bot');
+                        break;
+                    case 6:
+                        userData['Precipitation'] = parseFloat(userText);
+                        addChatEntry("Thank you. Processing your data...", 'bot');
+                        submitData();
+                        break;
+                }
+                step++;
+                scrollToBottom();
+            }
+        }
+
+        function addChatEntry(text, className) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            div.className = 'chat-entry ' + className;
+            chatContainer.appendChild(div);
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function submitData() {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                addChatEntry(`Predicted Risk Score: ${result['Predicted Risk Score']}<br>Insurance Premium: ${result['Insurance Premium']}`, 'bot');
+            } else {
+                // addChatEntry(`Error: ${result.error}`, 'bot');
+                addChatEntry(`Error: Cannot Calculate Risk Score. Please contact the Insurance Company.`, 'bot');
+            }
+        }
+    </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Risk Assessment Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f2f2f7;
+            padding-top: 50px;
+        }
+        .chat-container {
+            background-color: white;
+            border-radius: 20px;
+            padding: 10px 20px 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .chat-entry {
+            max-width: 75%;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 18px;
+            line-height: 1.6;
+        }
+        .user {
+            background-color: #007aff;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 3px;
+        }
+        .bot {
+            background-color: #e5e5ea;
+            color: black;
+            border-bottom-left-radius: 3px;
+        }
+        #userInput {
+            border-radius: 20px;
+            padding: 10px 20px;
+            border: 1px solid #ccc;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        ::placeholder {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-entry bot">Hi there! 👋 I'm your Crop Risk Assistant. What's your name?</div>
+        </div>
+        <input type="text" id="userInput" class="form-control" placeholder="Type your message here..." onkeypress="handleUserInput(event)">
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        let step = 0;
+        const userData = {};
+
+        function handleUserInput(event) {
+            if (event.key === 'Enter' && userInput.value.trim() !== '') {
+                const userText = userInput.value.trim();
+                userInput.value = '';
+                displayChatEntry(userText, 'user');
+                progressConversation(userText);
+            }
+        }
+
+        function displayChatEntry(text, sender) {
+            const chatEntryDiv = document.createElement('div');
+            chatEntryDiv.textContent = text;
+            chatEntryDiv.className = `chat-entry ${sender}`;
+            chatContainer.appendChild(chatEntryDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function progressConversation(userText) {
+            setTimeout(() => {  // simulate a slight delay in bot's response
+                switch(step) {
+                    case 0:
+                        userData['Name'] = userText;
+                        displayChatEntry("Nice to meet you! Please enter your phone number.", 'bot');
+                        break;
+                    case 1:
+                        if (!/^\d{10}$/.test(userText)) {
+                            displayChatEntry("Please enter a valid 10-digit phone number.", 'bot');
+                            step--;
+                        } else {
+                            userData['Phone'] = userText;
+                            displayChatEntry("What's your email address?", 'bot');
+                        }
+                        break;
+                    case 2:
+                        if (!/\S+@\S+\.\S+/.test(userText)) {
+                            displayChatEntry("That doesn't look right. Please enter a valid email.", 'bot');
+                            step--;
+                        } else {
+                            userData['Email'] = userText;
+                            displayChatEntry("Which location are you interested in?", 'bot');
+                        }
+                        break;
+                    case 3:
+                        userData['Location'] = userText;
+                        displayChatEntry("What type of crop are you planting?", 'bot');
+                        break;
+                    case 4:
+                        userData['Crop'] = userText;
+                        displayChatEntry("Please enter the expected average temperature in °F.", 'bot');
+                        break;
+                    case 5:
+                        userData['Temperature'] = parseFloat(userText);
+                        displayChatEntry("Please enter the expected precipitation in mm.", 'bot');
+                        break;
+                    case 6:
+                        userData['Precipitation'] = parseFloat(userText);
+                        displayChatEntry("Thanks! Let me crunch the numbers...", 'bot');
+                        submitData();
+                        break;
+                }
+                step++;
+            }, 400);
+        }
+
+        async function submitData() {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(userData)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                displayChatEntry(`Predicted Risk Score: ${result['Predicted Risk Score']}<br>Insurance Premium: ${result['Insurance Premium']}`, 'bot');
+            } else {
+                displayChatEntry(`Error: ${result.error}`, 'bot');
+            }
+        }
+    </script>
+</body>
+</html> 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Risk Assessment Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f2f2f7;
+            padding-top: 50px;
+        }
+        .chat-container {
+            background-color: white;
+            border-radius: 20px;
+            padding: 10px 20px 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .chat-entry {
+            max-width: 75%;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 18px;
+            line-height: 1.6;
+        }
+        .user {
+            background-color: #007aff;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 3px;
+        }
+        .bot {
+            background-color: #e5e5ea;
+            color: black;
+            border-bottom-left-radius: 3px;
+        }
+        #userInput {
+            border-radius: 20px;
+            padding: 10px 20px;
+            border: 1px solid #ccc;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        ::placeholder {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-entry bot">Hi there! 👋 I'm your Crop Risk Assistant. What's your name?</div>
+        </div>
+        <input type="text" id="userInput" class="form-control" placeholder="Type your message here..." onkeypress="handleUserInput(event)">
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        let step = 0;
+        const userData = {};
+        let availableLocations = [];
+        let availableCrops = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchLocationsAndCrops();  // Populate available locations and crops on load
+        });
+
+        function handleUserInput(event) {
+            if (event.key === 'Enter' && userInput.value.trim() !== '') {
+                const userText = userInput.value.trim();
+                userInput.value = '';
+                displayChatEntry(userText, 'user');
+                progressConversation(userText);
+            }
+        }
+
+        function displayChatEntry(text, sender) {
+            const chatEntryDiv = document.createElement('div');
+            chatEntryDiv.textContent = text;
+            chatEntryDiv.className = `chat-entry ${sender}`;
+            chatContainer.appendChild(chatEntryDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function progressConversation(userText) {
+            setTimeout(() => {  // simulate a slight delay in bot's response
+                switch(step) {
+                    case 0:
+                        userData['Name'] = userText;
+                        displayChatEntry("Nice to meet you! Please enter your phone number.", 'bot');
+                        break;
+                    case 1:
+                        if (!/^\d{10}$/.test(userText)) {
+                            displayChatEntry("Please enter a valid 10-digit phone number.", 'bot');
+                            step--;
+                        } else {
+                            userData['Phone'] = userText;
+                            displayChatEntry("What's your email address?", 'bot');
+                        }
+                        break;
+                    case 2:
+                        if (!/\S+@\S+\.\S+/.test(userText)) {
+                            displayChatEntry("That doesn't look right. Please enter a valid email.", 'bot');
+                            step--;
+                        } else {
+                            userData['Email'] = userText;
+                            displayChatEntry(`Which location are you interested in? Available options: ${availableLocations.join(", ")}`, 'bot');
+                        }
+                        break;
+                    case 3:
+                        if (!availableLocations.includes(userText)) {
+                            displayChatEntry("Please select a valid location from the list provided.", 'bot');
+                            step--;
+                        } else {
+                            userData['Location'] = userText;
+                            displayChatEntry(`What type of crop are you planting? Available options: ${availableCrops.join(", ")}`, 'bot');
+                        }
+                        break;
+                    case 4:
+                        if (!availableCrops.includes(userText)) {
+                            displayChatEntry("Please select a valid crop from the list provided.", 'bot');
+                            step--;
+                        } else {
+                            userData['Crop'] = userText;
+                            displayChatEntry("Please enter the expected average temperature in °F.", 'bot');
+                        }
+                        break;
+                    case 5:
+                        userData['Temperature'] = parseFloat(userText);
+                        displayChatEntry("Please enter the expected precipitation in mm.", 'bot');
+                        break;
+                    case 6:
+                        userData['Precipitation'] = parseFloat(userText);
+                        displayChatEntry("Thanks! Let me crunch the numbers...", 'bot');
+                        submitData();
+                        break;
+                }
+                step++;
+            }, 400);
+        }
+
+        async function submitData() {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(userData)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                displayChatEntry(`Predicted Risk Score: ${result['Predicted Risk Score']}`, 'bot');
+                displayChatEntry(`Premium: ${result['Insurance Premium']}`, 'bot');
+            } else {
+                displayChatEntry(`Error: ${result.error}`, 'bot');
+            }
+        }
+
+        async function fetchLocationsAndCrops() {
+            const response = await fetch('/get-locations-and-crops', { method: 'GET' });
+            const data = await response.json();
+            availableLocations = data.locations;
+            availableCrops = data.crops;
+        }
+    </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Risk Assessment Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f2f2f7;
+            padding-top: 50px;
+        }
+        .chat-container {
+            background-color: white;
+            border-radius: 20px;
+            padding: 10px 20px 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .chat-entry {
+            max-width: 75%;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 18px;
+            line-height: 1.6;
+        }
+        .user {
+            background-color: #007aff;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 3px;
+        }
+        .bot {
+            background-color: #e5e5ea;
+            color: black;
+            border-bottom-left-radius: 3px;
+        }
+        #userInput {
+            border-radius: 20px;
+            padding: 10px 20px;
+            border: 1px solid #ccc;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        ::placeholder {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-entry bot">Hi there! 👋 I'm your Crop Risk Assistant. What's your name?</div>
+        </div>
+        <input type="text" id="userInput" class="form-control" placeholder="Type your message here..." onkeypress="handleUserInput(event)">
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        let step = 0;
+        const userData = {};
+        let availableLocations = [];
+        let availableCrops = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchLocations();  // Populate available locations on load
+        });
+
+        function handleUserInput(event) {
+            if (event.key === 'Enter' && userInput.value.trim() !== '') {
+                const userText = userInput.value.trim();
+                userInput.value = '';
+                displayChatEntry(userText, 'user');
+                progressConversation(userText);
+            }
+        }
+
+        function displayChatEntry(text, sender) {
+            const chatEntryDiv = document.createElement('div');
+            chatEntryDiv.textContent = text;
+            chatEntryDiv.className = `chat-entry ${sender}`;
+            chatContainer.appendChild(chatEntryDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function progressConversation(userText) {
+        setTimeout(() => {  // simulate a slight delay in bot's response
+            switch(step) {
+                case 0:
+                    userData['Name'] = userText;
+                    displayChatEntry("Nice to meet you! Please enter your phone number.", 'bot');
+                    break;
+                case 1:
+                    if (!/^\d{10}$/.test(userText)) {
+                        displayChatEntry("Please enter a valid 10-digit phone number.", 'bot');
+                        step--; // decrement to repeat this step
+                    } else {
+                        userData['Phone'] = userText;
+                        displayChatEntry("What's your email address?", 'bot');
+                    }
+                    break;
+                case 2:
+                    if (!/\S+@\S+\.\S+/.test(userText)) {
+                        displayChatEntry("That doesn't look right. Please enter a valid email.", 'bot');
+                        step--; // decrement to repeat this step
+                    } else {
+                        userData['Email'] = userText;
+                        displayChatEntry("Which location are you interested in?", 'bot');
+                    }
+                    break;
+                case 3:
+                    userData['Location'] = userText;
+                    if (!availableLocations.includes(userText)) {
+                        displayChatEntry("Please select a valid location from the list provided.", 'bot');
+                        step--;
+                    } else {
+                        fetchCropsForLocation(userText); // Fetch crops based on selected location
+                    }
+                    break;
+                case 4:
+                    if (!availableCrops.includes(userText)) {
+                        displayChatEntry("Please select a valid crop from the list provided.", 'bot');
+                        step--; // decrement to repeat this step
+                    } else {
+                        userData['Crop'] = userText;
+                        displayChatEntry("Please enter the expected average temperature in °F.", 'bot');
+                    }
+                    break;
+                case 5:
+                    userData['Temperature'] = parseFloat(userText);
+                    displayChatEntry("Please enter the expected precipitation in mm.", 'bot');
+                    break;
+                case 6:
+                    userData['Precipitation'] = parseFloat(userText);
+                    displayChatEntry("Thanks! Let me crunch the numbers...", 'bot');
+                    submitData();
+                    break;
+            }
+            step++;
+        }, 400);
+    }
+
+    async function submitData() {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(userData)
+        });
+        const result = await response.json();
+        if (response.ok) {
+            displayChatEntry(`Predicted Risk Score: ${result['Predicted Risk Score']}<br>Insurance Premium: ${result['Insurance Premium']}`, 'bot');
+        } else {
+            displayChatEntry(`Error: ${result.error}`, 'bot');
+        }
+    }
+
+    async function fetchLocations() {
+        const response = await fetch('/get-locations', { method: 'GET' });
+        const data = await response.json();
+        availableLocations = data.locations;
+    }
+
+    async function fetchCropsForLocation(location) {
+        const response = await fetch(`/get-crops?location=${location}`, { method: 'GET' });
+        const data = await response.json();
+        availableCrops = data.crops;
+        displayChatEntry(`What type of crop are you planting? Available options: ${availableCrops.join(", ")}`, 'bot');
+        step++;
+    }
+</script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crop Risk Assessment Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f2f2f7;
+            padding-top: 50px;
+        }
+        .chat-container {
+            background-color: white;
+            border-radius: 20px;
+            padding: 10px 20px 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .chat-entry {
+            max-width: 75%;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 18px;
+            line-height: 1.6;
+        }
+        .user {
+            background-color: #007aff;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 3px;
+        }
+        .bot {
+            background-color: #e5e5ea;
+            color: black;
+            border-bottom-left-radius: 3px;
+        }
+        #userInput {
+            border-radius: 20px;
+            padding: 10px 20px;
+            border: 1px solid #ccc;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        ::placeholder {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-entry bot">Hi there! 👋 I'm your Crop Risk Assistant. What's your name?</div>
+        </div>
+        <input type="text" id="userInput" class="form-control" placeholder="Type your message here..." onkeypress="handleUserInput(event)">
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        let step = 0;
+        const userData = {};
+        let availableLocations = [];
+        let availableCrops = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchLocations();  // Populate available locations on load
+        });
+
+        function handleUserInput(event) {
+            if (event.key === 'Enter' && userInput.value.trim() !== '') {
+                const userText = userInput.value.trim();
+                userInput.value = '';
+                displayChatEntry(userText, 'user');
+                progressConversation(userText);
+            }
+        }
+
+        function displayChatEntry(text, sender) {
+            const chatEntryDiv = document.createElement('div');
+            chatEntryDiv.textContent = text;
+            chatEntryDiv.className = `chat-entry ${sender}`;
+            chatContainer.appendChild(chatEntryDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function progressConversation(userText) {
+            setTimeout(() => {  // simulate a slight delay in bot's response
+            switch(step) {
+                    case 0:
+                        userData['Name'] = userText;
+                        displayChatEntry("Nice to meet you! Please enter your phone number.", 'bot');
+                        break;
+                    case 1:
+                        if (!/^\d{10}$/.test(userText)) {
+                            displayChatEntry("Please enter a valid 10-digit phone number.", 'bot');
+                            step--;
+                        } else {
+                            userData['Phone'] = userText;
+                            displayChatEntry("What's your email address?", 'bot');
+                        }
+                        break;
+                    case 2:
+                        if (!/\S+@\S+\.\S+/.test(userText)) {
+                            displayChatEntry("That doesn't look right. Please enter a valid email.", 'bot');
+                            step--;
+                        } else {
+                            userData['Email'] = userText;
+                            displayChatEntry(`Which location are you interested in? Available options: ${availableLocations.join(", ")}`, 'bot');
+                        }
+                        break;
+                    case 3:
+                        if (!availableLocations.includes(userText)) {
+                            displayChatEntry("Please select a valid location from the list provided.", 'bot');
+                            step--;
+                        } else {
+                            userData['Location'] = userText;
+                            displayChatEntry(`What type of crop are you planting? Available options: ${availableCrops.join(", ")}`, 'bot');
+                        }
+                        break;
+                    case 4:
+                        if (!availableCrops.includes(userText)) {
+                            displayChatEntry("Please select a valid crop from the list provided.", 'bot');
+                            step--;
+                        } else {
+                            userData['Crop'] = userText;
+                            displayChatEntry("Please enter the expected average temperature in °F.", 'bot');
+                        }
+                        break;
+                    case 5:
+                        userData['Temperature'] = parseFloat(userText);
+                        displayChatEntry("Please enter the expected precipitation in mm.", 'bot');
+                        break;
+                    case 6:
+                        userData['Precipitation'] = parseFloat(userText);
+                        displayChatEntry("Thanks! Let me crunch the numbers...", 'bot');
+                        submitData();
+                        break;
+                }
+                step++;
+            }, 400);
+        }
+
+        async function submitData() {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(userData)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                displayChatEntry(`Predicted Risk Score: ${result['Predicted Risk Score']}<br>Insurance Premium: ${result['Insurance Premium']}`, 'bot');
+            } else {
+                displayChatEntry(`Error: ${result.error}`, 'bot');
+            }
+        }
+
+        async function fetchLocations() {
+            const response = await fetch('/get-locations', { method: 'GET' });
+            const data = await response.json();
+            availableLocations = data.locations;
+        }
+
+        async function fetchCropsForLocation(location) {
+            const response = await fetch(`/get-crops?location=${encodeURIComponent(location)}`, { method: 'GET' });
+            const data = await response.json();
+            availableCrops = data.crops;
+            displayChatEntry(`What type of crop are you planting? Available options: ${availableCrops.join(", ")}`, 'bot');
+            step++;
+        }
+    </script>
+</body>
+</html>
